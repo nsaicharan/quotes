@@ -246,7 +246,7 @@
 	   				<td class="align-middle"><?php echo $row['zip']; ?></td>
 	   				<td class="align-middle"><a href="#" class="btn btn-link" data-id="<?php echo $row['id']; ?>" data-toggle="modal" data-target="#exampleModal">View</a></td>
 	   				<td class="text-center align-middle">
-						<a title="Edit" class="btn btn-primary btn-sm mr-1" href="readyedit.php?id=<?php echo $row['id']; ?>"><i class="fa  fa-pencil"></i></a><button title="Delete" class="deleteBtn btn btn-danger btn-sm ml-1" data-id="<?php echo $row['id']; ?>"><i class="fa fa-trash-o"></i></button>
+						<a title="Edit" class="btn btn-primary btn-sm mr-1" href="testingedit.php?id=<?php echo $row['id']; ?>"><i class="fa  fa-pencil"></i></a><button title="Delete" class="deleteBtn btn btn-danger btn-sm ml-1" data-id="<?php echo $row['id']; ?>"><i class="fa fa-trash-o"></i></button>
 					</td>
 	   			</tr>
 
