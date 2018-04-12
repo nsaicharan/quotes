@@ -4,6 +4,9 @@
 	session_unset();
 	session_destroy();
 
+	setcookie('loggedInUser', '', time() - 3600, '/');
+	unset($_COOKIE['loggedInUser']);
+
 	header("Location: index.php");
 	
  ?>

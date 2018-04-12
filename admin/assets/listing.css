@@ -1,0 +1,52 @@
+body {
+	text-rendering: optimizeLegibility;
+	 -webkit-font-smoothing: antialiased;
+	 -moz-osx-font-smoothing: grayscale;
+	 font-family: 'Open Sans', sans-serif;
+	 background: hsl(48, 100%, 67%);
+}
+
+a:hover {
+	text-decoration: none;
+}
+
+.alert {
+	width: 95vw;
+	max-width: 1180px;
+	margin: 10px auto 12px;
+}
+
+h2 {
+	font-family: 'Mate SC', satisfy;
+	margin: 0 0 20px;
+	font-size: 24px;
+	background: #011638;
+	padding: 12px 0;
+	color: white;
+}
+
+.container--table {
+	background: white;
+	padding: 0 0 30px;
+	margin:0 auto 25px;
+	box-shadow: 0 1px 5px rgba(0, 0, 0, .15);
+	width: 1180px;
+	max-width: 95vw;
+}
+
+@media (max-width: 1070px) {
+    .table-responsive {
+        display:block;
+        width: 100%;
+        overflow-x: auto;
+        -ms-overflow-style: -ms-autohiding-scrollbar
+    }
+
+    .table-responsive.table-bordered {
+        border: 0
+    }
+}
+
+button {
+	cursor: pointer;
+}

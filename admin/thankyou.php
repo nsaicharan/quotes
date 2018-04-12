@@ -1,9 +1,10 @@
-<?php 
-	session_start(); 
+<?php
+	session_start();
 
-	// if (!$_SESSION['loggedInUser']) {
-	// 	header("Location: index.php");
-	// }
+	if (!$_SESSION['loggedInUser']) {
+		header("Location: index.php");
+		exit();
+	}
 
 	include('../conn.php');
 
@@ -17,19 +18,17 @@
 	$icon_result = mysqli_query($conn, $icon_query);
 	$icon_row = mysqli_fetch_all($icon_result);
 
-	$tracking_query = "SELECT * FROM tracking_code";
-	$tracking_result = mysqli_query($conn, $tracking_query);
-	$tracking_row = mysqli_fetch_array($tracking_result);
-	
+	// $tracking_query = "SELECT * FROM tracking_code";
+	// $tracking_result = mysqli_query($conn, $tracking_query);
+	// $tracking_row = mysqli_fetch_array($tracking_result);
 
-	$dummy = "You will soon receive quotes from your local agents in your area so you don't have to talk to a machine or someone who lives far away.";
 
 	if (isset($_POST['update'])) {
 		$title = mysqli_real_escape_string($conn, $_POST['title']);
 		$message = mysqli_real_escape_string($conn, $_POST['message']);
 		$xAxis = mysqli_real_escape_string($conn, $_POST['xAxis']);
 		$yAxis = mysqli_real_escape_string($conn, $_POST['yAxis']);
-		
+
 		$query = "UPDATE thankyou SET title = '$title', message = '$message', image_xaxis = '$xAxis', image_yaxis = '$yAxis'";
 		$result = mysqli_query($conn, $query);
 
@@ -59,10 +58,9 @@
 		$query = "UPDATE social_icons SET display = '$linkedinDisplay', url = '$linkedinURL' WHERE id = 5";
 		$result = mysqli_query($conn, $query);
 
-		//Tracking Code
-		$fbPixel = mysqli_real_escape_string($conn, $_POST['fbPixel']);
-		$gAnalytics = mysqli_real_escape_string($conn, $_POST['gAnalytics']);
-		$query = "UPDATE tracking_code set fb_pixel = '$fbPixel', g_analytics = '$gAnalytics'";
+		$instagramDisplay = mysqli_real_escape_string($conn, $_POST['instagramDisplay']);
+		$instagramURL = mysqli_real_escape_string($conn, $_POST['instagramURL']);
+		$query = "UPDATE social_icons SET display = '$instagramDisplay', url = '$instagramURL' WHERE id = 6";
 		$result = mysqli_query($conn, $query);
 
 		if ($result) {
@@ -76,10 +74,8 @@
 			$icon_result = mysqli_query($conn, $icon_query);
 			$icon_row = mysqli_fetch_all($icon_result);
 
-			$tracking_query = "SELECT * FROM tracking_code";
-			$tracking_result = mysqli_query($conn, $tracking_query);
-			$tracking_row = mysqli_fetch_array($tracking_result);
 		} else {
+			echo mysqli_error($conn);
 			$message = '<div class="alert alert-danger">Update Failed! <button class="close" data-dismiss="alert">&times;</button></div>';
 		}
 
@@ -96,26 +92,30 @@
 	        $fileExt = explode('.', $fileName);
 	        $fileActualExt = strtolower(end($fileExt));
 
-	        $allowed = array('jpg', 'jpeg', 'png', 'gif', 'svg', 'webp');
+            if ($fileError === 0) {
+                $fileNameNew = uniqid('').".".$fileActualExt;
 
-	        if (in_array($fileActualExt, $allowed)) {
-	            if ($fileError === 0) {
-	                $fileNameNew = uniqid('').".".$fileActualExt;
+                $fileDest = '../thankyou/img/'.$fileNameNew;
 
-	                $fileDest = '../thankyou/img/'.$fileNameNew;
+                move_uploaded_file($fileTmpName, $fileDest);
 
-	                move_uploaded_file($fileTmpName, $fileDest);
+                //Remove old img
+                $query = "SELECT image FROM thankyou";
+                $result = mysqli_query($conn, $query);
+                $oldImg = mysqli_fetch_array($result)['image'];
+                unlink('../thankyou/img/'.$oldImg);
 
-	                $query = "UPDATE thankyou SET image = '$fileNameNew'";
-	                $result = mysqli_query($conn, $query);
+                //Store new img name
+                $query = "UPDATE thankyou SET image = '$fileNameNew'";
+                $result = mysqli_query($conn, $query);
 
-	                if ($result) {
-	                	$message = '<div class="alert alert-success">Image uploaded and data successfully updated! <button class="close" data-dismiss="alert">&times;</button></div>';
-	                } else {
-	                	$message = '<div class="alert alert-danger">Something went wrong while uploading the image! <button class="close" data-dismiss="alert">&times;</button></div>';
-	                }
-	            }
-	        }
+                if ($result) {
+                	$message = '<div class="alert alert-success">Image uploaded and data successfully updated! <button class="close" data-dismiss="alert">&times;</button></div>';
+                } else {
+                	$message = '<div class="alert alert-danger">Something went wrong while uploading the image! <button class="close" data-dismiss="alert">&times;</button></div>';
+                }
+            }
+
 	    }
 	}
 ?>
@@ -125,10 +125,10 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Thank You Page</title>
-	<link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-beta/css/bootstrap.css">
-    <link href="https://fonts.googleapis.com/css?family=Mate+SC|Roboto:300,400,700|Satisfy|Open+Sans:400,700,300" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+	<title>Thank You Page | Admin Panel</title>
+
+	<link rel="stylesheet" href="assets/library.css">
+    <link href="https://fonts.googleapis.com/css?family=Mate+SC|Open+Sans:400,700" rel="stylesheet">
 
 	<style type="text/css">
 
@@ -139,57 +139,6 @@
 		button {
 			cursor: pointer;
 		}
-
-		/* === Start Navbar === */
-		.container--nav {
-			padding: 0;
-		}
-
-		.mr-onepx {
-			margin-right: 1px;
-		}
-
-		.mr-twopx {
-			margin-right: 2px;
-		}
-
-		.navbar {
-			padding: 0 1rem .16rem;
-			box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1);
-		    background-color: #fff;
-		    margin-bottom: 30px;
-		    font-family: 'Open Sans', sans-serif;
-		}
-
-		 .nav-link {
-			color: rgba(0, 0, 0, .7);
-		}
-
-		.nav-link:hover,
-		.nav-link:focus {
-			color: rgba(0, 0, 0, 1);
-		}
-
-		.navbar-brand {
-			font-size: 2rem;
-			color: #007bff !important;
-			font-family: 'Mate SC', serif;
-		}
-
-		@media (max-width: 767px) {
-			.navbar {
-				padding: 0 1rem;
-			}
-
-			.navbar-brand {
-				font-size: 1.8rem;
-			}
-
-			.navbar-toggler {
-				font-size: 1.1rem;
-			}
-		}
-		/* === End Navbar === */
 
 		.alert {
 			width: 90vw;
@@ -280,75 +229,17 @@
 </head>
 <body>
 
-	<nav class="navbar navbar-expand-lg  static-top">
-		<div class="container container--nav">
-			<a class="navbar-brand" href="data.php">Data Collection</a>
-			<button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
-				Menu
-				<i class="fa fa-bars"></i>
-			</button>
-			<div class="collapse navbar-collapse mt-lg-2" id="navbarResponsive">
-				<ul class="navbar-nav mr-auto">
-					<li class="nav-item dropdown">
-						<a class="nav-link dropdown-toggle" href="#" id="dropdownThemes" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-							<i class="fa fa-id-card-o mr-twopx"></i>
-							Insurance Listing
-						</a>
-						<div class="dropdown-menu" aria-labelledby="dropdownThemes">
-							<a class="dropdown-item" href="data.php">
-								<i class="fa fa-binoculars fa-fw mr-1"></i>
-								Just Curious
-							</a>
-							<a class="dropdown-item" href="semi.php">
-								<i class="fa fa-balance-scale fa-fw mr-1"></i>
-								Semi Interested
-							</a>
-							<a class="dropdown-item" href="ready.php">
-								<i class="fa fa-handshake-o fa-fw mr-1"></i>
-								Ready To Buy
-							</a>
-						</div>
-					</li>
-
-					<li class="nav-item">
-						<a class="nav-link" href="thankyou.php" title="Edit thank you page">
-							<i class="fa fa-heart-o mr-onepx"></i>
-							Thank You
-						</a>
-					</li>
-
-					<li class="nav-item">
-						<a class="nav-link" href="bg-logo.php" title="Change background or logo">
-							<i class="fa fa-file-image-o mr-twopx"></i>
-							Background &amp; Logo
-						</a>
-					</li>
-				</ul>
-				<ul class="navbar-nav">
-					<li class="nav-item dropdown">
-						<a class="nav-link dropdown-toggle text-capitalize" href="#" id="dropdownPremium" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-							<i class="fa fa-user-circle-o fa-lg fa-fw"></i>
-							Max
-						</a>
-						<div class="dropdown-menu dropdown-menu-right mb-1" aria-labelledby="dropdownPremium">
-							<a class="dropdown-item" href="logout.php">
-								<i class="fa fa-sign-out"></i>
-								Logout</a>
-						</div>
-					</li>
-				</ul>
-			</div>
-		</div>
-	</nav>
+	<?php include('navbar.php'); ?>
 
 	<?php echo $message; ?>
-	
+
 	<div class="container--thanks">
 		<h2>Thank You Page</h2>
 
 		<div class="wrapper">
 
 			<form action="<?php $_SERVER['PHP_SELF']; ?>" enctype="multipart/form-data" method="post">
+
 				<div class="form-group">
 					<label for="title"><strong>Title:</strong></label>
 					<input type="text" class="form-control" name="title" id="title" value="<?php echo $hero_row['title']; ?>">
@@ -389,9 +280,9 @@
 				</div>
 
 				<h5 class="mt-5 mb-3 text-center">Social Icons</h5>
-					
+
 				<?php for($i=0; $i < mysqli_num_rows($icon_result); $i++) : ?>
-				
+
 					<h6 class="text-capitalize mt-2"><strong><?php echo $icon_row[$i][1]; ?></strong></h6>
 					<div class="row">
 						<div class="col-sm-6">
@@ -412,32 +303,14 @@
 					</div>
 
 				<?php endfor; ?>
-			
-				<h5 class="mt-5 text-center">Tracking Code</h5>
-				<div class="row mt-sm-2">
-					<div class="col-sm-6">
-						<h6 class="text-sm-center mt-3">Facebook Pixel</h6>
-						<textarea class="form-control" name="fbPixel" id="fbPixel" rows="4">
-							<?php echo $tracking_row['fb_pixel']; ?>
-						</textarea>
-					</div>
-					<div class="col-sm-6">
-						<h6 class="text-sm-center mt-3">Google Analytics</h6>
-						<textarea class="form-control" name="gAnalytics" id="gAnalytics" rows="4">
-							<?php echo $tracking_row['g_analytics']; ?>
-						</textarea>
-					</div>
-				</div>
 
 				<button class="update-btn btn-primary" name="update">UPDATE</button>
-					
+
 			</form>
 		</div>
 
 	</div>
-	
-	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js"></script>
+
+	<script src="assets/library.js"></script>
 </body>
 </html>

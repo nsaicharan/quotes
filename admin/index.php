@@ -1,49 +1,64 @@
 <?php 
 
-    session_start();
+session_start();
 
-    if (isset($_SESSION['loggedInUser'])) {
-       
-		header("Location: data.php");
-		
-    } else {
-		
-		include('conn.php');
+if (isset($_SESSION['loggedInUser'])) {
 
-		$message = '';
+    header("Location: all.php");
 
-		if (  isset($_POST['submit'])  ) {
-			$formUser = mysqli_real_escape_string($conn, $_POST['user']);
-			$formPass = mysqli_real_escape_string($conn, $_POST['pass']);
+} else {
 
-			$query = "SELECT * FROM users WHERE username = '$formUser'";
+    include('../conn.php');
 
-			$result = mysqli_query($conn, $query);
+    $message = '';
 
-			if (mysqli_num_rows($result) > 0) {
+    if (isset($_POST['submit'])) {
 
-				while($row = mysqli_fetch_array($result)) {
-					$name = $row['username'];
-					$pass = $row['password'];
+        $secretKey = '6Lc_OkoUAAAAAJM1LMpNV5Qj_OdiajmKJXWT2c8Z';
+        $response = $_POST['g-recaptcha-response'];
+        $remoteip = $_SERVER['REMOTE_ADDR'];
+        $url = 'https://www.google.com/recaptcha/api/siteverify';
 
-					if ($pass == $formPass) {
+        $response = json_decode(file_get_contents("$url?secret=$secretKey&response=$response&remoteip=$remoteip"));
 
-						session_start();
+        if ($response->success) {
+            $formUser = trim($_POST['user']);
+            $formPass = mysqli_real_escape_string($conn, $_POST['pass']);
 
-						$_SESSION['loggedInUser'] = $name;
+            $query = "SELECT * FROM users WHERE username = ?";
+            $stmt = mysqli_stmt_init($conn);
+            
+            mysqli_stmt_prepare($stmt, $query);
+            mysqli_stmt_bind_param($stmt, 's', $formUser);
+            mysqli_stmt_execute($stmt);
 
-						header('Location: data.php');
+            $result = mysqli_stmt_get_result($stmt);
 
-					} else {
-						$message = '<p>Username and passwords do not match!</p>';
-					}
-				}
+            if (mysqli_num_rows($result) > 0) {
 
-			} else {
-				$message = '<p>No such user!</p>';
-			}
-		}
-	}
+                while ($row = mysqli_fetch_array($result)) {
+                    $username = $row['username'];
+                    $password = $row['password'];
+
+                    if (password_verify($formPass, $password)) {
+
+                        $_SESSION['loggedInUser'] = $username;
+                        
+                        header('Location: all.php');
+
+                    } else {
+                        $message = '<p>Wrong username or password.</p>';
+                    }
+                }
+
+            } else {
+                $message = '<p>Wrong username or password.</p>';
+            }
+        } else {
+            $message = '<p>Verification Failed!</p>';
+        }
+    }
+}
 
 ?>
 
@@ -53,8 +68,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
-    <link href="https://fonts.googleapis.com/css?family=Mate+SC|Roboto:400,700|Satisfy|Open+Sans:400,700,300" rel="stylesheet">
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css?family=Mate+SC" rel="stylesheet">
     <style>
         body {
             margin: 0;
@@ -73,7 +88,7 @@
         }
 
         form {
-            width: 550px;
+            width: 530px;
             max-width: 95vw;
             margin: 20px auto;
             background: white;
@@ -105,7 +120,7 @@
             width: 100%;
             border: none;
             padding: 12px 20px;
-            margin: 5px 0 20px;
+            margin: 5px 0 12px;
             background: rgba(0, 0, 0, 0.1);
             border-radius: 3px;
             font-size: 18px;
@@ -116,10 +131,10 @@
             display: block;
             width: 100%;
             border: none;;
-            background: hsl(217, 71%, 53%)	;
+            background: hsl(217, 71%, 53%);
             color: white;
             padding: 10px;
-			margin-top: 3px;
+			margin-top: 15px;
             font-size: 25px;
             font-family: 'Mate SC', sans-serif;
             border-radius: 3px;
@@ -133,22 +148,41 @@
             transition: .3s;
         }
 
+        .forgot {
+            display: block;
+            position: relative;
+            margin: -8px 2px 10px 0;
+            text-align: right;
+            text-decoration: none;
+            font-size: 80%;
+            color: hsl(217, 71%, 53%);
+            transition: .2s;
+        }
+
+        .forgot:hover {
+           text-decoration: underline;
+
+        }
     </style>
-    <link rel="stylesheet" href="pat.css">
 </head>
 <body>
-    <form action="" method="post">
+    <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
         <h1>Account Login</h1>
 
         <?php echo $message; ?>
 
-        <label for="user">User Name:</label>
-        <input type="text" name="user" id="user">
+        <label for="user">Username:</label>
+        <input type="text" name="user" id="user" value="<?php echo (isset($formUser)) ? $formUser : '';  ?>" required>
 
         <label for="pass">Password:</label>
-        <input type="password" name="pass" id="pass">
+        <input type="password" name="pass" id="pass" required>
+        <a href="forgotpass.php" class="forgot">Forgot Password?</a>
+        
+        <div class="g-recaptcha" data-sitekey="6Lc_OkoUAAAAAD8hbOqzogjHWZIRzFq2_u9KAnV2"></div>
 
         <button type="submit" name="submit">Login</button>
     </form>
+
+    <script src='https://www.google.com/recaptcha/api.js'></script>
 </body>
 </html>
